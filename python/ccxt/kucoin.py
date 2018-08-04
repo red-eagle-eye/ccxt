@@ -799,11 +799,12 @@ class kucoin (Exchange):
         market = self.market(symbol)
         quote = market['quote']
         base = market['base']
+        amount = self.truncate(amount, self.currencies[base]['precision'])
         request = {
             'symbol': market['id'],
             'type': side.upper(),
             'price': self.truncate(price, self.currencies[quote]['precision']),
-            'amount': self.truncate(amount, self.currencies[base]['precision']),
+            'amount': amount,
         }
         price = float(price)
         amount = float(amount)
