@@ -308,6 +308,17 @@ class huobipro (Exchange):
             return self.parse_order_book(orderbook, timestamp)
         raise ExchangeError(self.id + ' fetchOrderBook() returned unrecognized response: ' + self.json(response))
 
+    def fetch_tickers(self, symbols=None, params={}):
+        self.load_markets()
+        results = dict()
+        for symbol in symbols:
+            market = self.market(symbol)
+            extended_params = self.extend({
+                'symbol': market['id'],
+            }, params)
+            results[symbol] = self.fetch_ticker(symbol, extended_params)
+        return results
+
     def fetch_ticker(self, symbol, params={}):
         self.load_markets()
         market = self.market(symbol)
@@ -370,7 +381,7 @@ class huobipro (Exchange):
             trades = self.filter_by_symbol(trades, market['symbol'])
         return trades
 
-    def fetch_trades(self, symbol, since=None, limit=1000, params={}):
+    def fetch_trades(self, symbol, since=None, limit=200, params={}):
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -399,7 +410,7 @@ class huobipro (Exchange):
             ohlcv['amount'],
         ]
 
-    def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=1000, params={}):
+    def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=200, params={}):
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -545,11 +556,22 @@ class huobipro (Exchange):
         return self.fetch_orders_by_states('filled,partial-canceled,canceled', symbol, since, limit, params)
 
     def fetch_order(self, id, symbol=None, params={}):
-        self.load_markets()
-        response = self.privateGetOrderOrdersId(self.extend({
-            'id': id,
-        }, params))
-        return self.parse_order(response['data'])
+        since = self.safe_value(params, 'since')
+        limit = self.safe_value(params, 'limit', 10)
+
+        status = 0  # 0 for unfilled orders, 1 for filled orders
+        orders = self.fetch_orders(symbol, since, limit, { 'status': status})
+        for i in range(0, len(orders)):
+            if str(orders[i]['id']) == str(id):
+                return orders[i]
+
+        status = 1 # 0 for unfilled orders, 1 for filled orders
+        orders = self.fetch_orders(symbol, since, limit, {'status': status})
+        for i in range(0, len(orders)):
+            if str(orders[i]['id']) == str(id):
+                return orders[i]
+
+        raise Exception(id + ' order id for [' + str(symbol) + '] was not found')
 
     def parse_order_status(self, status):
         if status == 'partial-filled':
