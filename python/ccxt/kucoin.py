@@ -8,6 +8,7 @@ import base64
 import hashlib
 import math
 import json
+import time
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import InsufficientFunds
@@ -674,19 +675,43 @@ class kucoin (Exchange):
             'type': orderType,
             'orderOid': id,
         }
+        open_order = self.get_order_from_open_orders(symbol, id)
+        if open_order is not None:
+            return open_order
+        closed_order = self.get_order_from_closed_orders(symbol, id)
+        if closed_order is not None:
+            return closed_order
+
         response = self.privateGetOrderDetail(self.extend(request, params))
-        if not response['data']:
-            raise OrderNotFound(self.id + ' ' + self.json(response))
-        #
-        # the caching part to be removed
-        #
-        #     order = self.parse_order(response['data'], market)
-        #     orderId = order['id']
-        #     if orderId in self.orders:
-        #         order['status'] = self.orders[orderId]['status']
-        #     self.orders[orderId] = order
-        #
-        return self.parse_order(response['data'], market)
+        order = response['data']
+        if order is None:
+            raise ExchangeError(self.id + '/' + symbol + ' order was not found')
+
+        if not order.get('isActive'):
+            order = self.extend(order, {'status': 'closed'})
+        return self.parse_order(order, market)
+
+    def get_order_from_closed_orders(self, symbol, order_id):
+        closed_orders = self.fetch_closed_orders(symbol=symbol, limit= 3)
+        filtered_closed_orders = [closed_order for closed_order in closed_orders if closed_order.get('id') == order_id]
+        if len(filtered_closed_orders) > 0:
+            result = filtered_closed_orders[0]
+            for index in range(1, len(filtered_closed_orders)):
+                result["amount"] += filtered_closed_orders[index]["amount"]
+                result["filled"] += filtered_closed_orders[index]["filled"]
+                result["cost"] += filtered_closed_orders[index]["cost"]
+                result["remaining"] += filtered_closed_orders[index]["remaining"]
+            return result
+        else:
+            return None
+
+    def get_order_from_open_orders(self, symbol, order_id):
+        open_orders = self.fetch_open_orders(symbol)
+        filtered_orders = [open_order for open_order in open_orders if open_order.get('id') == order_id]
+        if len(filtered_orders) == 1:
+            return filtered_orders[0]
+        else:
+            return None
 
     def parse_orders_by_status(self, orders, market, since, limit, status):
         result = []
