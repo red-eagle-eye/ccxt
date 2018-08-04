@@ -433,6 +433,17 @@ class huobipro(Exchange):
             return result
         raise ExchangeError(self.id + ' fetchOrderBook() returned unrecognized response: ' + self.json(response))
 
+    def fetch_tickers(self, symbols=None, params={}):
+        self.load_markets()
+        results = dict()
+        for symbol in symbols:
+            market = self.market(symbol)
+            extended_params = self.extend({
+                'symbol': market['id'],
+            }, params)
+            results[symbol] = self.fetch_ticker(symbol, extended_params)
+        return results
+
     def fetch_ticker(self, symbol, params={}):
         self.load_markets()
         market = self.market(symbol)
@@ -569,7 +580,7 @@ class huobipro(Exchange):
         trades = self.parse_trades(response['data'], market, since, limit)
         return trades
 
-    def fetch_trades(self, symbol, since=None, limit=1000, params={}):
+    def fetch_trades(self, symbol, since=None, limit=200, params={}):
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -622,7 +633,7 @@ class huobipro(Exchange):
             self.safe_float(ohlcv, 'amount'),
         ]
 
-    def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=1000, params={}):
+    def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=200, params={}):
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -767,15 +778,6 @@ class huobipro(Exchange):
         #
         return self.parse_orders(response['data'], market, since, limit)
 
-    def fetch_order(self, id, symbol=None, params={}):
-        self.load_markets()
-        request = {
-            'id': id,
-        }
-        response = self.privateGetOrderOrdersId(self.extend(request, params))
-        order = self.safe_value(response, 'data')
-        return self.parse_order(order)
-
     def fetch_orders(self, symbol=None, since=None, limit=None, params={}):
         return self.fetch_orders_by_states('pre-submitted,submitted,partial-filled,filled,partial-canceled,canceled', symbol, since, limit, params)
 
@@ -837,6 +839,24 @@ class huobipro(Exchange):
         #
         data = self.safe_value(response, 'data', [])
         return self.parse_orders(data, market, since, limit)
+
+    def fetch_order(self, id, symbol=None, params={}):
+        since = self.safe_value(params, 'since')
+        limit = self.safe_value(params, 'limit', 10)
+
+        status = 0  # 0 for unfilled orders, 1 for filled orders
+        orders = self.fetch_orders(symbol, since, limit, { 'status': status})
+        for i in range(0, len(orders)):
+            if str(orders[i]['id']) == str(id):
+                return orders[i]
+
+        status = 1 # 0 for unfilled orders, 1 for filled orders
+        orders = self.fetch_orders(symbol, since, limit, {'status': status})
+        for i in range(0, len(orders)):
+            if str(orders[i]['id']) == str(id):
+                return orders[i]
+
+        raise Exception(id + ' order id for [' + str(symbol) + '] was not found')
 
     def parse_order_status(self, status):
         statuses = {
