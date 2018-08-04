@@ -380,11 +380,13 @@ class Exchange(object):
                 timeout=int(self.timeout / 1000),
                 proxies=self.proxies
             )
+            text = response.text
             self.last_http_response = response.text
+            response_headers = response.headers
             self.last_response_headers = response.headers
             if self.verbose:
-                print("\nResponse:", method, url, str(response.status_code), str(response.headers), self.last_http_response)
-            self.logger.debug("%s %s, Response: %s %s %s", method, url, response.status_code, response.headers, self.last_http_response)
+                print("\nResponse:", method, url, str(response.status_code), str(response.headers), text)
+            self.logger.debug("%s %s, Response: %s %s %s", method, url, response.status_code, response.headers, text)
             response.raise_for_status()
 
         except Timeout as e:
@@ -397,15 +399,15 @@ class Exchange(object):
             self.raise_error(ExchangeError, url, method, e)
 
         except HTTPError as e:
-            self.handle_errors(response.status_code, response.reason, url, method, self.last_response_headers, self.last_http_response)
-            self.handle_rest_errors(e, response.status_code, self.last_http_response, url, method)
-            self.raise_error(ExchangeError, url, method, e, self.last_http_response)
+            self.handle_errors(response.status_code, response.reason, url, method, response_headers, text)
+            self.handle_rest_errors(e, response.status_code, text, url, method)
+            self.raise_error(ExchangeError, url, method, e, text)
 
         except RequestException as e:  # base exception class
             self.raise_error(ExchangeError, url, method, e)
 
-        self.handle_errors(response.status_code, response.reason, url, method, None, self.last_http_response)
-        return self.handle_rest_response(self.last_http_response, url, method, headers, body)
+        self.handle_errors(response.status_code, response.reason, url, method, None, text)
+        return self.handle_rest_response(text, url, method, headers, body)
 
     def handle_rest_errors(self, exception, http_status_code, response, url, method='GET'):
         error = None
