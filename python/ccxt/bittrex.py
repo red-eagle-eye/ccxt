@@ -37,6 +37,7 @@ class bittrex(Exchange):
             'countries': ['US'],
             'version': 'v1.1',
             'rateLimit': 1500,
+            'timeout': 60000,
             'certified': True,
             'pro': True,
             # new metainfo interface
