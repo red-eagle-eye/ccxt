@@ -166,7 +166,7 @@ class okcoinusd (Exchange):
             'options': {
                 'marketBuyPrice': False,
                 'defaultContractType': 'this_week',  # next_week, quarter
-                'warnOnFetchOHLCVLimitArgument': True,
+                'warnOnFetchOHLCVLimitArgument': False,
                 'fiats': ['USD', 'CNY'],
                 'futures': {
                     'BCH': True,
