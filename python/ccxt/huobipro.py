@@ -568,7 +568,7 @@ class huobipro (Exchange):
             if str(orders[i]['id']) == str(id):
                 return orders[i]
 
-        raise Exception(id + ' order id for [' + str(symbol) + '] was not found')
+        raise ExchangeError(id + ' order id for [' + str(symbol) + '] was not found')
 
     def parse_order_status(self, status):
         if status == 'partial-filled':
