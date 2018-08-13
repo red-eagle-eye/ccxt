@@ -844,14 +844,12 @@ class huobipro(Exchange):
         since = self.safe_value(params, 'since')
         limit = self.safe_value(params, 'limit', 10)
 
-        status = 0  # 0 for unfilled orders, 1 for filled orders
-        orders = self.fetch_orders(symbol, since, limit, { 'status': status})
+        orders = self.fetch_open_orders(symbol, since, limit, params={})
         for i in range(0, len(orders)):
             if str(orders[i]['id']) == str(id):
                 return orders[i]
 
-        status = 1 # 0 for unfilled orders, 1 for filled orders
-        orders = self.fetch_orders(symbol, since, limit, {'status': status})
+        orders = self.fetch_closed_orders(symbol, since, limit, params={})
         for i in range(0, len(orders)):
             if str(orders[i]['id']) == str(id):
                 return orders[i]
