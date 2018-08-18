@@ -841,20 +841,11 @@ class huobipro(Exchange):
         return self.parse_orders(data, market, since, limit)
 
     def fetch_order(self, id, symbol=None, params={}):
-        since = self.safe_value(params, 'since')
-        limit = self.safe_value(params, 'limit', 10)
-
-        orders = self.fetch_open_orders(symbol, since, limit, params={})
-        for i in range(0, len(orders)):
-            if str(orders[i]['id']) == str(id):
-                return orders[i]
-
-        orders = self.fetch_closed_orders(symbol, since, limit, params={})
-        for i in range(0, len(orders)):
-            if str(orders[i]['id']) == str(id):
-                return orders[i]
-
-        raise ExchangeError(id + ' order id for [' + str(symbol) + '] was not found')
+        self.load_markets()
+        response = self.privateGetOrderOrdersId(self.extend({
+            'id': id,
+        }, params))
+        return self.parse_order(response['data'])
 
     def parse_order_status(self, status):
         statuses = {
