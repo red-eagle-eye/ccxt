@@ -6,6 +6,7 @@
 from ccxt.base.exchange import Exchange
 import math
 import json
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import InsufficientFunds
@@ -382,8 +383,14 @@ class okcoinusd (Exchange):
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
         numElements = len(ohlcv)
         volumeIndex = 6 if (numElements > 6) else 5
+        if 'd' in timeframe.lower():
+            period_start_dt = datetime.datetime.utcfromtimestamp(ohlcv[0]/1000)
+            period_start_dt = period_start_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
+            period_start_ts = int(period_start_dt.timestamp()*1000)
+        else:
+            period_start_ts = ohlcv[0]
         return [
-            ohlcv[0],  # timestamp
+            period_start_ts,  # timestamp
             ohlcv[1],  # Open
             ohlcv[2],  # High
             ohlcv[3],  # Low
