@@ -6,6 +6,8 @@
 from ccxt.base.exchange import Exchange
 import hashlib
 import math
+import json
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import PermissionDenied
@@ -624,8 +626,15 @@ class huobipro(Exchange):
         return self.filter_by_symbol_since_limit(result, symbol, since, limit)
 
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
+        safe_id = self.safe_timestamp(ohlcv, 'id')
+        if 'd' in timeframe.lower():
+            period_start_dt = datetime.datetime.utcfromtimestamp(safe_id)
+            period_start_dt = period_start_dt.replace(hour=0, minute=2, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
+            period_start_ts = int(period_start_dt.timestamp())
+        else:
+            period_start_ts = safe_id
         return [
-            self.safe_timestamp(ohlcv, 'id'),
+            period_start_ts,
             self.safe_float(ohlcv, 'open'),
             self.safe_float(ohlcv, 'high'),
             self.safe_float(ohlcv, 'low'),
