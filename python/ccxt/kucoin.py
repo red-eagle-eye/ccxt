@@ -9,6 +9,7 @@ import hashlib
 import math
 import json
 import time
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import InsufficientFunds
@@ -1052,8 +1053,18 @@ class kucoin (Exchange):
         return self.parse_trades(response['data']['datas'], market, since, limit)
 
     def parse_trading_view_ohlcv(self, ohlcvs, market=None, timeframe='1m', since=None, limit=None):
+        if 'd' in timeframe.lower():
+            ohlcvs = self.convert_ohlcv_to_utc(ohlcvs)
         result = self.convert_trading_view_to_ohlcv(ohlcvs)
         return self.parse_ohlcvs(result, market, timeframe, since, limit)
+
+    def convert_ohlcv_to_utc(self, ohlcvs):
+        for i in range(0, len(ohlcvs['t'])):
+            period_start_dt = datetime.datetime.utcfromtimestamp(ohlcvs['t'][i])
+            period_start_dt = period_start_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
+            period_start_ts = int(period_start_dt.timestamp())
+            ohlcvs['t'][i] = period_start_ts
+        return ohlcvs
 
     def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=None, params={}):
         self.load_markets()
