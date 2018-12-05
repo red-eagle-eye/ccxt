@@ -403,7 +403,7 @@ class huobipro (Exchange):
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
         if 'd' in timeframe.lower():
             period_start_dt = datetime.datetime.utcfromtimestamp(ohlcv['id'])
-            period_start_dt = period_start_dt.replace(hour=0, minute=2, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
+            period_start_dt = period_start_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
             period_start_ts = int(period_start_dt.timestamp())
         else:
             period_start_ts = ohlcv['id']
