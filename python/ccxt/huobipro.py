@@ -629,7 +629,7 @@ class huobipro(Exchange):
         safe_id = self.safe_timestamp(ohlcv, 'id')
         if 'd' in timeframe.lower():
             period_start_dt = datetime.datetime.utcfromtimestamp(safe_id)
-            period_start_dt = period_start_dt.replace(hour=0, minute=2, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
+            period_start_dt = period_start_dt.replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=datetime.timezone.utc)
             period_start_ts = int(period_start_dt.timestamp())
         else:
             period_start_ts = safe_id
