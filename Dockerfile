@@ -8,7 +8,7 @@
 # Exec:
 #    docker exec -it catalyst-final catalyst run -f /projects/my_algo.py --start 2015-1-1 --end 2016-1-1 /projects/result.pickle
 
-FROM redeagleeye/catalyst-prod:0.5.21.CUSTOM1
+FROM redeagleeye/catalyst-prod:0.5.21.CUSTOM2
 
 ADD python /ccxt/python
 ADD package.json /ccxt/package.json
