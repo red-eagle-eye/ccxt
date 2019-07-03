@@ -37,7 +37,6 @@ class bittrex(Exchange):
             'countries': ['US'],
             'version': 'v1.1',
             'rateLimit': 1500,
-            'timeout': 60000,
             'certified': True,
             'pro': True,
             # new metainfo interface
@@ -63,6 +62,12 @@ class bittrex(Exchange):
                 '30m': 'thirtyMin',
                 '1h': 'hour',
                 '1d': 'day',
+            },
+            'timeframesV3': {
+                '1m': 'MINUTE_1',
+                '5m': 'MINUTE_5',
+                '1h': 'HOUR_1',
+                '1d': 'DAY_1'
             },
             'hostname': 'bittrex.com',
             'urls': {
@@ -618,27 +623,30 @@ class bittrex(Exchange):
         raise ExchangeError(self.id + ' fetchTrades() returned None response')
 
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1d', since=None, limit=None):
-        timestamp = self.parse8601(ohlcv['T'] + '+00:00')
+        return self.parse_ohlcv_v3(ohlcv, market, timeframe, since, limit)
+
+    def parse_ohlcv_v3(self, ohlcv, market=None, timeframe='1d', since=None, limit=None):
+        timestamp = self.parse8601(ohlcv['startsAt'] + '+00:00')
         return [
             timestamp,
-            ohlcv['O'],
-            ohlcv['H'],
-            ohlcv['L'],
-            ohlcv['C'],
-            ohlcv['V'],
+            ohlcv['open'],
+            ohlcv['high'],
+            ohlcv['low'],
+            ohlcv['close'],
+            ohlcv['volume'],
         ]
 
     def fetch_ohlcv(self, symbol, timeframe='1m', since=None, limit=None, params={}):
-        self.load_markets()
+        return self.fetch_ohlcv_v3(symbol, timeframe, since, limit, params)
+
+    def fetch_ohlcv_v3(self, symbol, timeframe='1m', since=None, limit=None, params={}):
         market = self.market(symbol)
         request = {
-            'tickInterval': self.timeframes[timeframe],
-            'marketName': market['id'],
+            'candleInterval': self.timeframesV3[timeframe]
         }
-        response = self.v2GetMarketGetTicks(self.extend(request, params))
-        if 'result' in response:
-            if response['result']:
-                return self.parse_ohlcvs(response['result'], market, timeframe, since, limit)
+        request['marketSymbol'] = market['base'] + '-' + market['quote']
+        response = self.v3publicGetMarketsMarketSymbolCandles(request)
+        return self.parse_ohlcvs(response)
 
     def fetch_open_orders(self, symbol=None, since=None, limit=None, params={}):
         self.load_markets()
