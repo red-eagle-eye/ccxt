@@ -920,7 +920,7 @@ class okcoinusd (Exchange):
         if len(body) < 2:
             return  # fallback to default error handler
         if body[0] == '{':
-            if 'error_code' in response and response['error_code'] != 0:
+            if 'error_code' in response and int(response['error_code']) != 0:
                 error = self.safe_string(response, 'error_code')
                 message = self.id + ' ' + self.json(response)
                 if error in self.exceptions:
