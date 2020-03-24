@@ -1831,7 +1831,7 @@ class okex(Exchange):
             'type': type,
             'side': side,
             'price': price,
-            'amount': amount,
+            'amount': float(amount),
             'filled': None,
             'remaining': None,
             'cost': None,
