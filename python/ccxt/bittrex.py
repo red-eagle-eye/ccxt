@@ -661,13 +661,7 @@ class bittrex(Exchange):
         return self.filter_by_symbol(orders, symbol)
 
     def create_order(self, symbol, type, side, amount, price=None, params={}):
-        uppercaseType = type.upper()
-        isMarket = (uppercaseType == 'MARKET')
-        isCeilingLimit = (uppercaseType == 'CEILING_LIMIT')
-        isCeilingMarket = (uppercaseType == 'CEILING_MARKET')
-        isV3 = isMarket or isCeilingLimit or isCeilingMarket
-        defaultMethod = 'create_order_v3' if isV3 else 'create_order_v1'
-        method = self.safe_value(self.options, 'createOrderMethod', defaultMethod)
+        method = self.safe_value(self.options, 'createOrderMethod', 'create_order_v3')
         return getattr(self, method)(symbol, type, side, amount, price, params)
 
     def create_order_v3(self, symbol, type, side, amount, price=None, params={}):
@@ -687,7 +681,7 @@ class bittrex(Exchange):
             # 'ceiling': self.price_to_precision(symbol, price),  # required for ceiling orders, excluded for non-ceiling orders
             # 'limit': self.price_to_precision(symbol, price),  # required for limit orders, excluded for market orders
             # 'timeInForce': 'GOOD_TIL_CANCELLED',  # IMMEDIATE_OR_CANCEL, FILL_OR_KILL, POST_ONLY_GOOD_TIL_CANCELLED
-            # 'useAwards': False,  # optional
+            'useAwards': True,
         }
         isCeilingLimit = (uppercaseType == 'CEILING_LIMIT')
         isCeilingMarket = (uppercaseType == 'CEILING_MARKET')
