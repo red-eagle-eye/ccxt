@@ -27,6 +27,9 @@ from ccxt.base.errors import OnMaintenance
 from ccxt.base.decimal_to_precision import TRUNCATE
 from ccxt.base.decimal_to_precision import DECIMAL_PLACES
 
+import os
+useAwards = os.getenv("BITTREX_USE_AWARDS", "False") == "True"
+
 
 class bittrex(Exchange):
 
@@ -681,7 +684,7 @@ class bittrex(Exchange):
             # 'ceiling': self.price_to_precision(symbol, price),  # required for ceiling orders, excluded for non-ceiling orders
             # 'limit': self.price_to_precision(symbol, price),  # required for limit orders, excluded for market orders
             # 'timeInForce': 'GOOD_TIL_CANCELLED',  # IMMEDIATE_OR_CANCEL, FILL_OR_KILL, POST_ONLY_GOOD_TIL_CANCELLED
-            'useAwards': True,
+            'useAwards': useAwards,
         }
         isCeilingLimit = (uppercaseType == 'CEILING_LIMIT')
         isCeilingMarket = (uppercaseType == 'CEILING_MARKET')

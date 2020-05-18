@@ -1,6 +1,6 @@
 
 # Build:
-#    docker build -t redeagleeye/catalyst-final:0.5.21.CUSTOM15_1.24.80.CUSTOM4 .
+#    docker build -t redeagleeye/catalyst-final:0.5.21.CUSTOM15_1.24.80.CUSTOM5 .
 #
 # Run:
 #    docker run -v /some/folder:/app -v ~/.catalyst:/root/.catalyst --name catalyst-final -it enigmampc/catalyst-final
