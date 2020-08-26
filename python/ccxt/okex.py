@@ -2025,10 +2025,25 @@ class okex(Exchange):
         fee = None
         if feeCost is not None:
             feeCurrency = None
-            fee = {
-                'cost': feeCost,
-                'currency': feeCurrency,
-            }
+            if self.safe_string(order, 'fee_currency') == marketId.split('-')[0]:
+                feeCostAbs = abs(feeCost)
+                if amount > 0:
+                    amount -= feeCostAbs
+                    if abs(filled) > feeCostAbs:
+                        filled -= feeCostAbs
+                else:
+                    amount += feeCostAbs
+                    if abs(filled) > feeCostAbs:
+                        filled += feeCostAbs
+                fee = {
+                    'cost': 0.0,
+                    'currency': feeCurrency,
+                }
+            else:
+                fee = {
+                    'cost': feeCost,
+                    'currency': feeCurrency,
+                }
         clientOrderId = self.safe_string(order, 'client_oid')
         return {
             'info': order,
