@@ -30,6 +30,8 @@ class binance(Exchange):
             'name': 'Binance',
             'countries': ['JP', 'MT'],  # Japan, Malta
             'rateLimit': 500,
+            'rateLimitStatusHeaders': ['x-mbx-order-count-1d', 'x-mbx-order-count-10s',
+                                       'x-mbx-used-weight-1m', 'x-mbx-used-weight'],
             'certified': True,
             'pro': True,
             # new metainfo interface

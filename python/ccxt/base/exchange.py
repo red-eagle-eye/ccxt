@@ -115,6 +115,8 @@ class Exchange(object):
     # rate limiter settings
     enableRateLimit = False
     rateLimit = 2000  # milliseconds = seconds * 1000
+    rateLimitStatusHeaders = []
+    rateLimitStatusHeadersCounters = {}
     timeout = 10000   # milliseconds = seconds * 1000
     asyncio_loop = None
     aiohttp_proxy = None
@@ -380,6 +382,9 @@ class Exchange(object):
         if self.requiresWeb3 and Web3 and not self.web3:
             self.web3 = Web3(HTTPProvider())
 
+        for rt_header in self.rateLimitStatusHeaders:
+            self.rateLimitStatusHeadersCounters[rt_header] = 0
+
     def __del__(self):
         if self.session:
             self.session.close()
@@ -556,6 +561,11 @@ class Exchange(object):
             if self.verbose:
                 print("\nResponse:", method, url, http_status_code, headers, http_response)
             self.logger.debug("%s %s, Response: %s %s %s", method, url, http_status_code, headers, http_response)
+            if self.rateLimitStatusHeaders is not None:
+                for rt_header in self.rateLimitStatusHeaders:
+                    rt_header_value = self.safe_float(headers, rt_header, 0)
+                    if rt_header_value > self.rateLimitStatusHeadersCounters[rt_header]:
+                        self.rateLimitStatusHeadersCounters[rt_header] = rt_header_value
             response.raise_for_status()
 
         except Timeout as e:
