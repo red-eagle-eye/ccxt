@@ -6,6 +6,7 @@
 from ccxt.base.exchange import Exchange
 import math
 import json
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import PermissionDenied
@@ -690,6 +691,10 @@ class binance(Exchange):
         return self.status
 
     def fetch_ticker(self, symbol, params={}):
+        now = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is not None and self.same_minute(now, self.tickers_cache_dt):
+            return self.tickers_cache[symbol]
+
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -699,11 +704,11 @@ class binance(Exchange):
         response = getattr(self, method)(self.extend(request, params))
         return self.parse_ticker(response, market)
 
-    def parse_tickers(self, rawTickers, symbols=None):
+    def parse_tickers(self, rawTickers):
         tickers = []
         for i in range(0, len(rawTickers)):
             tickers.append(self.parse_ticker(rawTickers[i]))
-        return self.filter_by_array(tickers, 'symbol', symbols)
+        return tickers
 
     def fetch_bids_asks(self, symbols=None, params={}):
         self.load_markets()
@@ -712,13 +717,23 @@ class binance(Exchange):
         query = self.omit(params, 'type')
         method = 'publicGetTickerBookTicker' if (type == 'spot') else 'fapiPublicGetTickerBookTicker'
         response = getattr(self, method)(query)
-        return self.parse_tickers(response, symbols)
+        parsed_tickers = self.parse_tickers(response)
+        return self.filter_by_array(parsed_tickers, 'symbol', symbols)
 
     def fetch_tickers(self, symbols=None, params={}):
-        self.load_markets()
-        method = self.options['fetchTickersMethod']
-        response = getattr(self, method)(params)
-        return self.parse_tickers(response, symbols)
+        request_dt = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is None or not self.same_minute(request_dt, self.tickers_cache_dt):
+            self.load_markets()
+            method = self.options['fetchTickersMethod']
+            response = getattr(self, method)(params)
+            parsed_tickers = self.parse_tickers(response)
+            self.update_tickers_cache(parsed_tickers, request_dt)
+
+        return {symbol: self.tickers_cache[symbol] for symbol in symbols}
+
+    def update_tickers_cache(self, tickers_array, request_dt):
+        self.tickers_cache = self.index_by(tickers_array, 'symbol')
+        self.tickers_cache_dt = request_dt
 
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
         return [
