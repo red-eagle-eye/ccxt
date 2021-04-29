@@ -566,7 +566,7 @@ class Exchange(object):
                 self.last_response_headers = headers
             if self.verbose:
                 print("\nResponse:", method, url, http_status_code, headers, http_response)
-            self.logger.debug("%s %s, Response: %s %s %s", method, url, http_status_code, headers, http_response)
+            self.logger.debug("%s %s, Response: %s %s %s", method, url, http_status_code, headers, http_response[0:750])
             if self.rateLimitStatusHeaders is not None:
                 for rt_header in self.rateLimitStatusHeaders:
                     rt_header_value = self.safe_float(headers, rt_header, 0)
