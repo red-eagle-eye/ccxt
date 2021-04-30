@@ -435,18 +435,11 @@ class huobipro(Exchange):
             return result
         raise ExchangeError(self.id + ' fetchOrderBook() returned unrecognized response: ' + self.json(response))
 
-    def fetch_tickers(self, symbols=None, params={}):
-        self.load_markets()
-        results = dict()
-        for symbol in symbols:
-            market = self.market(symbol)
-            extended_params = self.extend({
-                'symbol': market['id'],
-            }, params)
-            results[symbol] = self.fetch_ticker(symbol, extended_params)
-        return results
-
     def fetch_ticker(self, symbol, params={}):
+        now = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is not None and self.same_minute(now, self.tickers_cache_dt):
+            return self.tickers_cache[symbol]
+
         self.load_markets()
         market = self.market(symbol)
         request = {
@@ -480,22 +473,29 @@ class huobipro(Exchange):
         return ticker
 
     def fetch_tickers(self, symbols=None, params={}):
-        self.load_markets()
-        response = self.marketGetTickers(params)
-        tickers = self.safe_value(response, 'data')
-        timestamp = self.safe_integer(response, 'ts')
-        result = {}
-        for i in range(0, len(tickers)):
-            marketId = self.safe_string(tickers[i], 'symbol')
-            market = self.safe_value(self.markets_by_id, marketId)
-            symbol = marketId
-            if market is not None:
-                symbol = market['symbol']
-                ticker = self.parse_ticker(tickers[i], market)
-                ticker['timestamp'] = timestamp
-                ticker['datetime'] = self.iso8601(timestamp)
-                result[symbol] = ticker
-        return result
+        request_dt = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is None or not self.same_minute(request_dt, self.tickers_cache_dt):
+            self.load_markets()
+            response = self.marketGetTickers(params)
+            tickers = self.safe_value(response, 'data')
+            timestamp = self.safe_integer(response, 'ts')
+            parsed_tickers = []
+            for i in range(0, len(tickers)):
+                marketId = self.safe_string(tickers[i], 'symbol')
+                market = self.safe_value(self.markets_by_id, marketId)
+                symbol = marketId
+                if market is not None:
+                    symbol = market['symbol']
+                    ticker = self.parse_ticker(tickers[i], market)
+                    ticker['timestamp'] = timestamp
+                    ticker['datetime'] = self.iso8601(timestamp)
+                    parsed_tickers.append(ticker)
+            self.update_tickers_cache(parsed_tickers, request_dt)
+
+        if symbols is None:
+            return self.tickers_cache
+        else:
+            return {symbol: self.tickers_cache[symbol] for symbol in symbols}
 
     def parse_trade(self, trade, market=None):
         #

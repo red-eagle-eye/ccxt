@@ -729,11 +729,10 @@ class binance(Exchange):
             parsed_tickers = self.parse_tickers(response)
             self.update_tickers_cache(parsed_tickers, request_dt)
 
-        return {symbol: self.tickers_cache[symbol] for symbol in symbols}
-
-    def update_tickers_cache(self, tickers_array, request_dt):
-        self.tickers_cache = self.index_by(tickers_array, 'symbol')
-        self.tickers_cache_dt = request_dt
+        if symbols is None:
+            return self.tickers_cache
+        else:
+            return {symbol: self.tickers_cache[symbol] for symbol in symbols}
 
     def parse_ohlcv(self, ohlcv, market=None, timeframe='1m', since=None, limit=None):
         return [

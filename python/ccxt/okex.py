@@ -14,6 +14,7 @@ except NameError:
     basestring = str  # Python 2
 import hashlib
 import math
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import PermissionDenied
@@ -1081,6 +1082,10 @@ class okex(Exchange):
         }
 
     def fetch_ticker(self, symbol, params={}):
+        now = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is not None and self.same_minute(now, self.tickers_cache_dt):
+            return self.tickers_cache[symbol]
+
         self.load_markets()
         market = self.market(symbol)
         method = market['type'] + 'GetInstrumentsInstrumentIdTicker'
@@ -1106,15 +1111,21 @@ class okex(Exchange):
         return self.parse_ticker(response)
 
     def fetch_tickers_by_type(self, type, symbols=None, params={}):
-        self.load_markets()
-        method = type + 'GetInstrumentsTicker'
-        response = getattr(self, method)(params)
-        result = {}
-        for i in range(0, len(response)):
-            ticker = self.parse_ticker(response[i])
-            symbol = ticker['symbol']
-            result[symbol] = ticker
-        return result
+        request_dt = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is None or not self.same_minute(request_dt, self.tickers_cache_dt):
+            self.load_markets()
+            method = type + 'GetInstrumentsTicker'
+            response = getattr(self, method)(params)
+            parsed_tickers = []
+            for i in range(0, len(response)):
+                ticker = self.parse_ticker(response[i])
+                parsed_tickers.append(ticker)
+            self.update_tickers_cache(parsed_tickers, request_dt)
+
+        if symbols is None:
+            return self.tickers_cache
+        else:
+            return {symbol: self.tickers_cache[symbol] for symbol in symbols}
 
     def fetch_tickers(self, symbols=None, params={}):
         defaultType = self.safe_string_2(self.options, 'fetchTickers', 'defaultType')

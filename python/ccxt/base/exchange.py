@@ -1374,6 +1374,10 @@ class Exchange(object):
         raise NotSupported(
             'API does not allow to fetch all tickers at once with a single call to fetch_tickers() for now')
 
+    def update_tickers_cache(self, tickers_array, request_dt):
+        self.tickers_cache = self.index_by(tickers_array, 'symbol')
+        self.tickers_cache_dt = request_dt
+
     def fetch_order_status(self, id, symbol=None, params={}):
         order = self.fetch_order(id, symbol, params)
         return order['status']

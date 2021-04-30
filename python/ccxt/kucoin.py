@@ -6,6 +6,7 @@
 from ccxt.base.exchange import Exchange
 import hashlib
 import math
+import datetime
 from ccxt.base.errors import ExchangeError
 from ccxt.base.errors import AuthenticationError
 from ccxt.base.errors import AccountSuspended
@@ -476,39 +477,45 @@ class kucoin(Exchange):
         }
 
     def fetch_tickers(self, symbols=None, params={}):
-        self.load_markets()
-        response = self.publicGetMarketAllTickers(params)
-        #
-        #     {
-        #         "code": "200000",
-        #         "data": {
-        #             "date": 1550661940645,
-        #             "ticker": [
-        #                 'buy': '0.00001168',
-        #                 'changePrice': '-0.00000018',
-        #                 'changeRate': '-0.0151',
-        #                 'datetime': 1550661146316,
-        #                 'high': '0.0000123',
-        #                 'last': '0.00001169',
-        #                 'low': '0.00001159',
-        #                 'sell': '0.00001182',
-        #                 'symbol': 'LOOM-BTC',
-        #                 'vol': '44399.5669'
-        #             },
-        #         ]
-        #     }
-        #
-        data = self.safe_value(response, 'data', {})
-        tickers = self.safe_value(data, 'ticker', [])
-        result = {}
-        for i in range(0, len(tickers)):
-            ticker = self.parse_ticker(tickers[i])
-            symbol = self.safe_string(ticker, 'symbol')
-            if symbol is not None:
-                result[symbol] = ticker
-        return result
+        request_dt = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is None or not self.same_minute(request_dt, self.tickers_cache_dt):
+            self.load_markets()
+            response = self.publicGetMarketAllTickers(params)
+            #
+            #     {
+            #         "code": "200000",
+            #         "data": {
+            #             "date": 1550661940645,
+            #             "ticker": [
+            #                 'buy': '0.00001168',
+            #                 'changePrice': '-0.00000018',
+            #                 'changeRate': '-0.0151',
+            #                 'datetime': 1550661146316,
+            #                 'high': '0.0000123',
+            #                 'last': '0.00001169',
+            #                 'low': '0.00001159',
+            #                 'sell': '0.00001182',
+            #                 'symbol': 'LOOM-BTC',
+            #                 'vol': '44399.5669'
+            #             },
+            #         ]
+            #     }
+            #
+            data = self.safe_value(response, 'data', {})
+            tickers = self.safe_value(data, 'ticker', [])
+            parsed_tickers = [self.parse_ticker(ticker) for ticker in tickers]
+            self.update_tickers_cache(parsed_tickers, request_dt)
+
+        if symbols is None:
+            return self.tickers_cache
+        else:
+            return {symbol: self.tickers_cache[symbol] for symbol in symbols}
 
     def fetch_ticker(self, symbol, params={}):
+        now = datetime.datetime.utcnow()
+        if self.tickers_cache_dt is not None and self.same_minute(now, self.tickers_cache_dt):
+            return self.tickers_cache[symbol]
+
         self.load_markets()
         market = self.market(symbol)
         request = {
