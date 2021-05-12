@@ -1,6 +1,6 @@
 
 # Build:
-#    docker build -t redeagleeye/catalyst-final:0.5.21.CUSTOM23_1.24.80.CUSTOM10 .
+#    docker build -t redeagleeye/catalyst-final:0.5.21.CUSTOM24_1.24.80.CUSTOM10 .
 #
 # Run:
 #    docker run -v /some/folder:/app -v ~/.catalyst:/root/.catalyst --name catalyst-final -it enigmampc/catalyst-final
@@ -8,7 +8,7 @@
 # Exec:
 #    docker exec -it catalyst-final catalyst run -f /projects/my_algo.py --start 2015-1-1 --end 2016-1-1 /projects/result.pickle
 
-FROM redeagleeye/catalyst-prod:0.5.21.CUSTOM23
+FROM redeagleeye/catalyst-prod:0.5.21.CUSTOM24
 
 ADD python /ccxt/python
 ADD package.json /ccxt/package.json
